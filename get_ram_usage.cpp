@@ -1,5 +1,4 @@
 #include <sys/sysinfo.h>
-#include <unistd.h>
 #include <iostream>
 #include <cstdlib>
 
@@ -12,15 +11,13 @@
 using namespace restbed;
 using namespace std;
 
-double get_cpu_load(void) {
-	static double f_load = 1.f / (1 << SI_LOAD_SHIFT);
-
+double get_ram_usage(void) {
 	struct sysinfo data;
 	int            status = 0;
 
 	status = sysinfo(&data);
 	if(status == 0) {
-		return data.loads[0] * f_load /** 100.0/get_nprocs()*/;
+		return (1.0 - ((double)(data.freeram) / (double)(data.totalram))) * 100.0;
 	} else {
 		return -1.0;
 	}
@@ -32,13 +29,12 @@ int main(int argc, char** argv) {
 	}
 	
 	while(1) {
-		double load = get_cpu_load();
+		double load = get_ram_usage();
 
 		stringstream ss;
 		ss << load;
 		
-		
-		cout << "[CPU load] " << ss.str() << endl;
+		cout << "[RAM load] " << ss.str() << endl;
 		
 		auto request = make_shared< Request >( Uri( argv[1] ) );
 		request->set_header("Accept", "*/*" );
