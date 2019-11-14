@@ -9,6 +9,7 @@ all: env
 	g++ $(OPT) $(INC_PATH) $(LIB_PATH) -o $(BUILD_PATH)/get_host_latency get_host_latency.cpp $(LIBS)
 	g++ $(OPT) $(INC_PATH) $(LIB_PATH) -o $(BUILD_PATH)/get_ip_gateway get_ip_gateway.cpp $(LIBS)
 	g++ $(OPT) $(INC_PATH) $(LIB_PATH) -o $(BUILD_PATH)/get_ram_usage get_ram_usage.cpp $(LIBS)
+	g++ $(OPT) $(INC_PATH) $(LIB_PATH) -o $(BUILD_PATH)/http_post_server http_post_server.cpp $(LIBS)
 
 run_cpu:
 	LD_LIBRARY_PATH=../restbed/build ./build/get_cpu_load http://localhost:10000/cpu
@@ -21,6 +22,9 @@ run_latency:
 	
 run_gateway:
 	LD_LIBRARY_PATH=../restbed/build ./build/get_ip_gateway http://localhost:10000/gateway
+
+run_server:
+	LD_LIBRARY_PATH=../restbed/build ./build/http_post_server
 
 env:
 	mkdir -p $(BUILD_PATH)/
