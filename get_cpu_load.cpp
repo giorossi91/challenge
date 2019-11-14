@@ -43,11 +43,10 @@ int main(int argc, char** argv) {
 		request->set_header("Content-Type", "application/x-www-form-urlencoded");
 		request->set_header("Content-Length", ss.str());
 		request->set_method("POST");
-		request->set_body(data);
+		request->set_body(ss.str());
 
 		auto future = Http::async( request, [ ]( const shared_ptr< Request >, const shared_ptr< Response > response ) {
 			fprintf( stderr, "Printing async response\n" );
-			print( response );
 		});
 
 		future.wait( );
