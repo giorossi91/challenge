@@ -6,7 +6,7 @@
 using namespace std;
 using namespace restbed;
 
-void post_method_handler( const shared_ptr< Session > session )
+void cpu_post_method_handler( const shared_ptr< Session > session )
 {
     const auto request = session->get_request( );
 
@@ -14,7 +14,46 @@ void post_method_handler( const shared_ptr< Session > session )
 
     session->fetch( content_length, [ ]( const shared_ptr< Session > session, const Bytes & body )
     {
-        fprintf( stdout, "%.*s\n", ( int ) body.size( ), body.data( ) );
+        fprintf( stdout, "[ CPU load ] %.*s\n", ( int ) body.size( ), body.data( ) );
+        session->close( OK, "Bravo!!", { { "Content-Length", "13" } } );
+    } );
+}
+
+void ram_post_method_handler( const shared_ptr< Session > session )
+{
+    const auto request = session->get_request( );
+
+    int content_length = request->get_header( "Content-Length", 0 );
+
+    session->fetch( content_length, [ ]( const shared_ptr< Session > session, const Bytes & body )
+    {
+        fprintf( stdout, "[ RAM load ] %.*s\n", ( int ) body.size( ), body.data( ) );
+        session->close( OK, "Bravo!!", { { "Content-Length", "13" } } );
+    } );
+}
+
+void latency_post_method_handler( const shared_ptr< Session > session )
+{
+    const auto request = session->get_request( );
+
+    int content_length = request->get_header( "Content-Length", 0 );
+
+    session->fetch( content_length, [ ]( const shared_ptr< Session > session, const Bytes & body )
+    {
+        fprintf( stdout, "[ Latency ] %.*s\n", ( int ) body.size( ), body.data( ) );
+        session->close( OK, "Bravo!!", { { "Content-Length", "13" } } );
+    } );
+}
+
+void gateway_post_method_handler( const shared_ptr< Session > session )
+{
+    const auto request = session->get_request( );
+
+    int content_length = request->get_header( "Content-Length", 0 );
+
+    session->fetch( content_length, [ ]( const shared_ptr< Session > session, const Bytes & body )
+    {
+        fprintf( stdout, "[ Gateway ] %.*s\n", ( int ) body.size( ), body.data( ) );
         session->close( OK, "Bravo!!", { { "Content-Length", "13" } } );
     } );
 }
@@ -23,19 +62,19 @@ int main( const int, const char** )
 {
     auto resource_cpu = make_shared< Resource >( );
     resource_cpu->set_path( "/cpu" );
-    resource_cpu->set_method_handler( "POST", post_method_handler );
+    resource_cpu->set_method_handler( "POST", cpu_post_method_handler );
 	
 	auto resource_ram = make_shared< Resource >( );
     resource_ram->set_path( "/ram" );
-    resource_ram->set_method_handler( "POST", post_method_handler );
+    resource_ram->set_method_handler( "POST", ram_post_method_handler );
 	
 	auto resource_gateway = make_shared< Resource >( );
     resource_gateway->set_path( "/gateway" );
-    resource_gateway->set_method_handler( "POST", post_method_handler );
+    resource_gateway->set_method_handler( "POST", gateway_post_method_handler );
 	
 	auto resource_latency = make_shared< Resource >( );
     resource_latency->set_path( "/latency" );
-    resource_latency->set_method_handler( "POST", post_method_handler );
+    resource_latency->set_method_handler( "POST", latency_post_method_handler );
 	
 	
 	
