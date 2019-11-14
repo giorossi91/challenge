@@ -1,7 +1,9 @@
 FROM gcc:7.4
 
+RUN mkdir -p ~/build
+
 COPY Makefile .
-COPY build/get_host_latency .
+COPY build/get_host_latency ~/build/
 COPY restbed .
 
 WORKDIR .

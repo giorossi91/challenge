@@ -1,7 +1,9 @@
 FROM gcc:7.4
 
+RUN mkdir -p ~/build
+
 COPY Makefile .
-COPY build/get_ram_usage .
+COPY build/get_ram_usage ~/build/
 COPY restbed .
 
 WORKDIR .
