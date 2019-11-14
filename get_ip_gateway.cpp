@@ -2,6 +2,8 @@
 #include <ios>
 #include <sstream>
 #include <iostream>
+#include <unistd.h>
+
 
 #include <memory>
 #include <future>
@@ -71,7 +73,10 @@ int main(int argc, char** argv) {
 	}
 	
 	while(1) {
+		stringstream ss_len;
+
 		string ip = get_IP_gateway();
+		ss_len << ip.length();
 		
 		cout << "[IP gateway] " << ip << endl;
 		
@@ -79,7 +84,7 @@ int main(int argc, char** argv) {
 		request->set_header("Accept", "*/*" );
 		request->set_header("Host", "localhost");
 		request->set_header("Content-Type", "application/x-www-form-urlencoded");
-		request->set_header("Content-Length", ss.str());
+		request->set_header("Content-Length", ss_len.str());
 		request->set_method("POST");
 		request->set_body(ip);
 
