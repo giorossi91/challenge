@@ -1,10 +1,11 @@
 FROM gcc:7.4
 
-RUN mkdir -p ~/build
+RUN mkdir -p /restbed
+RUN mkdir -p /build
 
 COPY Makefile .
-COPY build/get_host_latency ~/build/
-COPY restbed .
+COPY build/get_host_latency /build
+COPY restbed /restbed
 
 WORKDIR .
 ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:.
