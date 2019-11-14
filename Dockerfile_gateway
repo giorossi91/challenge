@@ -17,4 +17,4 @@ RUN apt-get install -y make
 
 EXPOSE 10000
 
-RUN make run_gateway&
+CMD make run_gateway
