@@ -1,7 +1,7 @@
 OPT:=-Wall -Wextra -O0 -g2
 INC_PATH:=-Irestbed/inc
 LIB_PATH:=-Lrestbed/lib
-LIBS:=-lrestbed
+LIBS:=-lrestbed -lpthread
 BUILD_PATH:=build
 IP:=172.31.44.121
 
@@ -11,6 +11,7 @@ all: env
 	g++ $(OPT) $(INC_PATH) $(LIB_PATH) -o $(BUILD_PATH)/get_ip_gateway get_ip_gateway.cpp $(LIBS)
 	g++ $(OPT) $(INC_PATH) $(LIB_PATH) -o $(BUILD_PATH)/get_ram_usage get_ram_usage.cpp $(LIBS)
 	g++ $(OPT) $(INC_PATH) $(LIB_PATH) -o $(BUILD_PATH)/http_post_server http_post_server.cpp $(LIBS)
+	g++ $(OPT) $(INC_PATH) $(LIB_PATH) -o $(BUILD_PATH)/http_gateway_server http_gateway_server.cpp $(LIBS)
 
 run_cpu:
 	LD_LIBRARY_PATH=./restbed/lib ./build/get_cpu_load http://$(IP):10000/cpu
@@ -24,8 +25,14 @@ run_latency:
 run_gateway:
 	LD_LIBRARY_PATH=./restbed/lib ./build/get_ip_gateway http://$(IP):10000/gateway
 
-run_server:
+run_test_server:
 	LD_LIBRARY_PATH=./restbed/lib ./build/http_post_server
+
+run_gateway_server:
+	LD_LIBRARY_PATH=./restbed/lib ./build/http_gateway_server
+
+test_announce:
+	curl -d "/cpu;1234" -X POST http://localhost:20000/announce
 
 env:
 	mkdir -p $(BUILD_PATH)/

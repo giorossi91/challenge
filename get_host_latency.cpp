@@ -96,6 +96,7 @@ int main(int argc, char** argv) {
 		request->set_body(latency);
 
 		auto future = Http::async( request, [ ]( const shared_ptr< Request >, const shared_ptr< Response > response ) {
+            (void) response;
 			fprintf( stderr, "Printing async response\n" );
 		});
 
