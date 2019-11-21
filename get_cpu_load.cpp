@@ -9,6 +9,8 @@
 #include <restbed>
 #include <sstream>
 
+#include "resource_server.h"
+
 using namespace restbed;
 using namespace std;
 
@@ -26,39 +28,34 @@ double get_cpu_load(void) {
 	}
 }
 
-int main(int argc, char** argv) {
-	if(argc != 2) {
-		return EXIT_FAILURE;
-	}
-	
-	while(1) {
+class CPULoad : ResourceManager {
+public:
+    CPULoad(string uri, string url, uint16_t port) : ResourceManager(uri, url, port) {}
+    ~CPULoad() {}
+
+    std::string get_data() {
 		double load = get_cpu_load();
 		stringstream ss_len;
 
 		stringstream ss;
 		ss << load;
-		
-		ss_len << ss.str().length();
-		
-		cout << "[CPU load] " << ss.str() << endl;
-		
-		auto request = make_shared< Request >( Uri( argv[1] ) );
-		request->set_header("Accept", "*/*" );
-		request->set_header("Host", "localhost");
-		request->set_header("Content-Type", "application/x-www-form-urlencoded");
-		request->set_header("Content-Length", ss_len.str());
-		request->set_method("POST");
-		request->set_body(ss.str());
 
-		auto future = Http::async( request, [ ]( const shared_ptr< Request >, const shared_ptr< Response > response ) {
-            (void) response;
-			fprintf( stderr, "Printing async response\n" );
-		});
+        return ss.str();
+    }
+};
 
-		future.wait( );
-		
-		sleep(1);
+int main(int argc, char** argv) {
+	if(argc != 2) {
+		return EXIT_FAILURE;
 	}
+
+
+    CPULoad service(argv[1], "/cpu", 10000);
+    service.start_resource_service();
+
+    service.announce_service();
+
+    while(1);
 	
 	return EXIT_SUCCESS;
 }

@@ -6,7 +6,10 @@ BUILD_PATH:=build
 IP:=172.31.44.121
 
 all: env
-	g++ $(OPT) $(INC_PATH) $(LIB_PATH) -o $(BUILD_PATH)/get_cpu_load get_cpu_load.cpp $(LIBS)
+	g++ -c $(OPT) $(INC_PATH) -o $(BUILD_PATH)/resource_server.o resource_server.cpp
+	g++ -c $(OPT) $(INC_PATH) -o $(BUILD_PATH)/get_cpu_load.o get_cpu_load.cpp
+	g++ $(OPT) $(INC_PATH) $(LIB_PATH) -o $(BUILD_PATH)/get_cpu_load get_cpu_load.o $(BUILD_PATH)/resource_server.o $(LIBS)
+	
 	g++ $(OPT) $(INC_PATH) $(LIB_PATH) -o $(BUILD_PATH)/get_host_latency get_host_latency.cpp $(LIBS)
 	g++ $(OPT) $(INC_PATH) $(LIB_PATH) -o $(BUILD_PATH)/get_ip_gateway get_ip_gateway.cpp $(LIBS)
 	g++ $(OPT) $(INC_PATH) $(LIB_PATH) -o $(BUILD_PATH)/get_ram_usage get_ram_usage.cpp $(LIBS)
