@@ -1,29 +1,37 @@
 #!/bin/bash
+IP=35.180.63.114
 
 echo "Deploying CPU Service"
 docker build -t setchallenge/cpu_service:v1 -f Dockerfile_cpu .
-docker tag setchallenge/cpu_service:v1 localhost:50000/setchallenge/cpu_service
-docker push localhost:50000/setchallenge/cpu_service
-docker run --rm localhost:50000/setchallenge/cpu_service&
+docker tag setchallenge/cpu_service:v1 $IP:50000/setchallenge/cpu_service
+docker push $IP:50000/setchallenge/cpu_service
+docker run --rm --name cpu_service $IP:50000/setchallenge/cpu_service&
 echo "==> Done!"
 
 echo "Deploying RAM Service"
 docker build -t setchallenge/ram_service:v1 -f Dockerfile_ram .
-docker tag setchallenge/ram_service:v1 localhost:50000/setchallenge/ram_service
-docker push localhost:50000/setchallenge/ram_service
-docker run --rm localhost:50000/setchallenge/ram_service&
+docker tag setchallenge/ram_service:v1 $IP:50000/setchallenge/ram_service
+docker push $IP:50000/setchallenge/ram_service
+docker run --rm --name ram_service $IP:50000/setchallenge/ram_service&
 echo "==> Done!"
 
 echo "Deploying IP Gateway Service"
 docker build -t setchallenge/gateway_service:v1 -f Dockerfile_gateway .
-docker tag setchallenge/gateway_service:v1 localhost:50000/setchallenge/gateway_service
-docker push localhost:50000/setchallenge/gateway_service
-docker run --rm localhost:50000/setchallenge/gateway_service&
+docker tag setchallenge/gateway_service:v1 $IP:50000/setchallenge/gateway_service
+docker push $IP:50000/setchallenge/gateway_service
+docker run --rm --name gateway_service $IP:50000/setchallenge/gateway_service&
 echo "==> Done!"
 
 echo "Deploying Latency Service"
 docker build -t setchallenge/latency_service:v1 -f Dockerfile_latency .
-docker tag setchallenge/latency_service:v1 localhost:50000/setchallenge/latency_service
-docker push localhost:50000/setchallenge/latency_service
-docker run --rm localhost:50000/setchallenge/latency_service&
+docker tag setchallenge/latency_service:v1 $IP:50000/setchallenge/latency_service
+docker push $IP:50000/setchallenge/latency_service
+docker run --rm --name latency_service $IP:50000/setchallenge/latency_service&
+echo "==> Done!"
+
+echo "Deploying Gateway Server"
+docker build -t setchallenge/server_gateway:v1 -f Dockerfile_servergtw .
+docker tag setchallenge/server_gateway:v1 $IP:50000/setchallenge/server_gateway
+docker push $IP:50000/setchallenge/server_gateway
+docker run --rm --name server_gateway $IP:50000/setchallenge/server_gateway&
 echo "==> Done!"
