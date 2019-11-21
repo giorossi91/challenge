@@ -13,24 +13,27 @@
 #include <cstring>
 #include <unistd.h>
 
-#define GATEWAY_IP   "35.180.63.114"
-#define GATEWAY_PORT "20000"
+typedef std::string (*get_data_func_T)(void);
+
+#define CPU_PORT 10002
+#define RAM_PORT 10001
+#define LAT_PORT 10000
+#define GTW_PORT 10003
 
 class ResourceManager {
 public:
-    ResourceManager(std::string url, uint16_t port);
+    ResourceManager(std::string uri_gtw, std::string url, uint16_t port, get_data_func_T func);
     virtual ~ResourceManager(void);
 
-    int16_t announce_service(void) const;
-    int16_t start_resource_service(void) const;
+    void announce_service(void) const;
+    void start_resource_service(void);
 
-    virtual std::string get_data() = 0;
-
-protected:
     std::string _url;
     uint16_t _port;
     std::string _uri_gtw;
+
 private:
-    void start_service_thread(void);
+    static void start_service_thread(ResourceManager *obj);
+    static void get_resource_handler( const std::shared_ptr< restbed::Session > session );
     std::thread _resource_thread;
 };

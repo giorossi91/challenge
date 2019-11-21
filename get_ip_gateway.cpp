@@ -4,12 +4,13 @@
 #include <iostream>
 #include <unistd.h>
 
-
 #include <memory>
 #include <future>
 #include <cstdio>
 #include <restbed>
 #include <sstream>
+
+#include "resource_server.h"
 
 using namespace restbed;
 using namespace std;
@@ -67,37 +68,28 @@ string get_IP_gateway(void) {
 	return ip;
 }
 
+std::string get_data() {
+    return get_IP_gateway();
+}
+
+class GatewayIP : public ResourceManager {
+public:
+    GatewayIP(string uri, string url, uint16_t port) : ResourceManager(uri, url, port, get_data) {}
+    ~GatewayIP() {}
+};
+
 int main(int argc, char** argv) {
 	if(argc != 2) {
 		return EXIT_FAILURE;
 	}
-	
-	while(1) {
-		stringstream ss_len;
 
-		string ip = get_IP_gateway();
-		ss_len << ip.length();
-		
-		cout << "[IP gateway] " << ip << endl;
-		
-		auto request = make_shared< Request >( Uri( argv[1] ) );
-		request->set_header("Accept", "*/*" );
-		request->set_header("Host", "localhost");
-		request->set_header("Content-Type", "application/x-www-form-urlencoded");
-		request->set_header("Content-Length", ss_len.str());
-		request->set_method("POST");
-		request->set_body(ip);
+    GatewayIP service(argv[1], "/gateway", GTW_PORT);
+    service.start_resource_service();
+    service.announce_service();
 
-		auto future = Http::async( request, [ ]( const shared_ptr< Request >, const shared_ptr< Response > response ) {
-            (void) response;
-			fprintf( stderr, "Printing async response\n" );
-		});
-
-		future.wait( );
-		
-		sleep(1);
-	}
+    while(1) {
+        pause();
+    }
 	
 	return EXIT_SUCCESS;
 }
-

@@ -28,20 +28,20 @@ double get_cpu_load(void) {
 	}
 }
 
-class CPULoad : ResourceManager {
+std::string get_data() {
+    double load = get_cpu_load();
+    stringstream ss_len;
+
+    stringstream ss;
+    ss << load;
+
+    return ss.str();
+}
+
+class CPULoad : public ResourceManager {
 public:
-    CPULoad(string uri, string url, uint16_t port) : ResourceManager(uri, url, port) {}
+    CPULoad(string uri, string url, uint16_t port) : ResourceManager(uri, url, port, get_data) {}
     ~CPULoad() {}
-
-    std::string get_data() {
-		double load = get_cpu_load();
-		stringstream ss_len;
-
-		stringstream ss;
-		ss << load;
-
-        return ss.str();
-    }
 };
 
 int main(int argc, char** argv) {
@@ -50,12 +50,13 @@ int main(int argc, char** argv) {
 	}
 
 
-    CPULoad service(argv[1], "/cpu", 10000);
+    CPULoad service(argv[1], "/cpu", CPU_PORT);
     service.start_resource_service();
-
     service.announce_service();
 
-    while(1);
+    while(1) {
+        pause();
+    }
 	
 	return EXIT_SUCCESS;
 }

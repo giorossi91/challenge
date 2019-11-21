@@ -10,6 +10,9 @@
 #include <restbed>
 #include <sstream>
 
+#include "resource_server.h"
+
+
 using namespace restbed;
 using namespace std;
 
@@ -25,40 +28,35 @@ double get_ram_usage(void) {
 	}
 }
 
+std::string get_data() {
+    double load = get_ram_usage();
+    stringstream ss_len;
+
+    stringstream ss;
+    ss << load;
+
+    return ss.str();
+}
+
+class RAMLoad : public ResourceManager {
+public:
+    RAMLoad(string uri, string url, uint16_t port) : ResourceManager(uri, url, port, get_data) {}
+    ~RAMLoad() {}
+};
+
 int main(int argc, char** argv) {
 	if(argc != 2) {
 		return EXIT_FAILURE;
 	}
-	
-	while(1) {
-		double load = get_ram_usage();
-		stringstream ss_len;
 
 
-		stringstream ss;
-		ss << load;
-		
-		ss_len << ss.str().length();
-		
-		cout << "[RAM load] " << ss.str() << endl;
-		
-		auto request = make_shared< Request >( Uri( argv[1] ) );
-		request->set_header("Accept", "*/*" );
-		request->set_header("Host", "localhost");
-		request->set_header("Content-Type", "application/x-www-form-urlencoded");
-		request->set_header("Content-Length", ss_len.str());
-		request->set_method("POST");
-		request->set_body(ss.str());
+    RAMLoad service(argv[1], "/ram", RAM_PORT);
+    service.start_resource_service();
+    service.announce_service();
 
-		auto future = Http::async( request, [ ]( const shared_ptr< Request >, const shared_ptr< Response > response ) {
-            (void) response;
-			fprintf( stderr, "Printing async response\n" );
-		});
-
-		future.wait( );
-		
-		sleep(1);
-	}
+    while(1) {
+        pause();
+    }
 	
 	return EXIT_SUCCESS;
 }

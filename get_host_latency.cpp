@@ -5,15 +5,19 @@
 #include <vector>
 #include <unistd.h>
 
-
+#include <thread>
+#include <mutex>
 #include <memory>
 #include <future>
 #include <restbed>
 #include <sstream>
 
+#include "resource_server.h"
+
 using namespace std;
 using namespace restbed;
 
+char *hostname;
 
 string get_stdout_from_command(string cmd) {
 	string data;
@@ -74,36 +78,50 @@ string get_latency (char *hostname) {
 	return out;
 }
 
+mutex latency_mtx;
+string latency_out = "0";
+void thr_latency(void) {
+    while(1) {
+        latency_mtx.lock();
+        latency_out = get_latency(hostname);
+        cout << "[PING]" << latency_out << endl;
+
+        latency_mtx.unlock();
+        sleep(3);
+    }
+}
+
+std::string get_data() {
+    latency_mtx.lock();
+    string out = latency_out ;
+    cout << "[OUT]" << out << endl;
+
+    latency_mtx.unlock();
+    return out;
+}
+
+class LatencyLoad : public ResourceManager {
+public:
+    LatencyLoad(string uri, string url, uint16_t port) : ResourceManager(uri, url, port, get_data) {}
+    ~LatencyLoad() {}
+};
+
 int main(int argc, char** argv) {
 	if(argc != 3) {
 		return EXIT_FAILURE;
-	}
-	
-	while(1) {
-		string latency = get_latency(argv[2]);
-		stringstream ss_len;
-		ss_len << latency.length();
+    }
 
+    hostname = argv[2];
 
-		cout << "[Latency from " << argv[2] << "] " << latency << " ms" << endl;
+    thread latency_thread = thread(thr_latency);
 
-		auto request = make_shared< Request >( Uri( argv[1] ) );
-		request->set_header("Accept", "*/*" );
-		request->set_header("Host", "localhost");
-		request->set_header("Content-Type", "application/x-www-form-urlencoded");
-		request->set_header("Content-Length", ss_len.str());
-		request->set_method("POST");
-		request->set_body(latency);
+    LatencyLoad service(argv[1], "/latency", LAT_PORT);
+    service.start_resource_service();
+    service.announce_service();
 
-		auto future = Http::async( request, [ ]( const shared_ptr< Request >, const shared_ptr< Response > response ) {
-            (void) response;
-			fprintf( stderr, "Printing async response\n" );
-		});
-
-		future.wait( );
-		
-		sleep(1);
-	}
+    while(1) {
+        pause();
+    }
 	
 	return EXIT_SUCCESS;
 }
