@@ -20,12 +20,14 @@ typedef std::string (*get_data_func_T)(void);
 #define LAT_PORT 10000
 #define GTW_PORT 10003
 
+#define RESOURCE_RETRY_THRESHOLD 3.0 //s
+
 class ResourceManager {
 public:
     ResourceManager(std::string uri_gtw, std::string url, uint16_t port, get_data_func_T func);
     virtual ~ResourceManager(void);
 
-    void announce_service(void) const;
+    void announce_service(void);
     void start_resource_service(void);
 
     std::string _url;

@@ -17,6 +17,8 @@ using namespace std;
 using namespace restbed;
 using std::chrono::system_clock;
 
+#define GIVEUP_THRESHOLD 5.0 //s
+
 struct MicroService {
     string   service_ip;
     uint16_t service_port;
@@ -58,7 +60,7 @@ void service_announce_method_handler( const shared_ptr< Session > session ) {
     string host_ip = get_ip(session->get_origin());
 
     session->fetch( content_length, [ host_ip ]( const shared_ptr< Session > session, const Bytes & body ) {
-        fprintf( stdout, "[ Gateway ] IP=%s %.*s\n", host_ip.c_str(), ( int ) body.size( ), body.data( ) );
+        fprintf( stdout, "[ Gateway ] Service Registered IP=%s %.*s\n", host_ip.c_str(), ( int ) body.size( ), body.data( ) );
 
         // url;porta
         string data_received;
@@ -78,13 +80,12 @@ void service_announce_method_handler( const shared_ptr< Session > session ) {
             new_service.resource_url = data_array[0];
             new_service.last_time_seen = system_clock::now();
 
-
             service_map_mutex.lock();
             map<string, MicroService> &service_list = service_map[host_ip];
             service_list[new_service.resource_url] = new_service;
             service_map_mutex.unlock();
 
-            session->close( OK, "Bravo!!", { { "Content-Length", "7" } } );
+            session->close( OK, "Service UP", { { "Content-Length", "10" } } );
         }
     } 
     );
@@ -114,9 +115,22 @@ void request_data_from_services(void) {
         service_map_mutex.unlock();
 
         for(auto &service_list_per_host: map_local) {
-            cout << "[ Gateway ] Contacting " << service_list_per_host.first << endl;
+            //cout << "[ Gateway ] Contacting " << service_list_per_host.first << endl;
             for(auto &service : service_list_per_host.second) {
-                cout << "[ Gateway ] Service " << service.first << " at " << service.second.service_port << endl;
+                //cout << "[ Gateway ] Service " << service.first << " at " << service.second.service_port << endl;
+                auto last_time = service.second.last_time_seen;
+                auto now = system_clock::now();
+                std::chrono::duration<double> elapsed_time = now - last_time;
+                if(elapsed_time.count() > GIVEUP_THRESHOLD) { //dead!
+                    service_map_mutex.lock();
+                    service_map[service_list_per_host.first].erase(service.first); //cancello servizio non più esistente
+                    service_map_mutex.unlock();
+
+                    cout << "[Gateway] Service Removed: " << service.first << endl;
+                    continue;
+                }
+
+
                 stringstream port_ss;
                 port_ss << service.second.service_port;
 
@@ -128,14 +142,31 @@ void request_data_from_services(void) {
                     auto length = response->get_header( "Content-Length", 0 );
                     Http::fetch( length, response );
 
-                    fprintf( stdout, "[ %s -- %s:%d ] %.*s\n",  
-                        service.second.resource_url.c_str(), 
-                        service.second.service_ip.c_str(), 
-                        service.second.service_port, 
-                        ( int ) response->get_body().size( ), 
-                        response->get_body().data() 
-                    );
+                    if(response->get_status_code() == OK) {
+                        service_map_mutex.lock();
+                        auto &services = service_map[service.second.service_ip];
+                        services[service.second.resource_url].last_time_seen = system_clock::now();
+                        service_map_mutex.unlock();
+                        
+                        fprintf( stdout, "[ %s -- %s:%d ] %.*s\n",  
+                            service.second.resource_url.c_str(), 
+                            service.second.service_ip.c_str(), 
+                            service.second.service_port, 
+                            ( int ) response->get_body().size( ), 
+                            response->get_body().data() 
+                        );
+
+
+                        /////////////////////////////////
+                        // Pubblicazione dati su HTML (Prometheus)
+                        /////////////////////////////////
+
+                    } else {
+                        cout << "[Gateway] Errore " << service.first << endl;
+                    }
+
                 });
+
 
                 future.wait( );
             }

@@ -84,7 +84,6 @@ void thr_latency(void) {
     while(1) {
         latency_mtx.lock();
         latency_out = get_latency(hostname);
-        cout << "[PING]" << latency_out << endl;
 
         latency_mtx.unlock();
         sleep(3);
@@ -94,7 +93,6 @@ void thr_latency(void) {
 std::string get_data() {
     latency_mtx.lock();
     string out = latency_out ;
-    cout << "[OUT]" << out << endl;
 
     latency_mtx.unlock();
     return out;
