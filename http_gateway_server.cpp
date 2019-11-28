@@ -204,8 +204,27 @@ string get_stdout_from_command(string cmd) {
 }
 
 bool is_number(const std::string &s) {
-  return !s.empty() && std::all_of(s.begin(), s.end(), ::isdigit);
+    unsigned int dot_number = 0;
+    bool is_num = true;
+    unsigned int i = 0;
+    while(is_num && i < s.length()) {
+        if(!isdigit(s[i])) {
+            if(s[i] == '.') {
+                dot_number ++;
+            } else {
+                is_num = false;
+            }
+        }
+
+        if(dot_number > 1) {
+            is_num = false;
+        }
+        i++;
+    }
+
+    return is_num;
 }
+
 
 void prometheus_exporter(void) {
     while(1) {
@@ -224,11 +243,11 @@ void prometheus_exporter(void) {
 
                 string url, data;
                 if(is_number(value)) {
-                    url = "http://172.31.44.121:" + ::to_string(PROMETHEUS_EXPORT_PORT) + "/metrics/job/" + metricname + "/instance/" + ip + "/team/saturno/"; 
+                    url = "http://172.31.44.121:" + ::to_string(PROMETHEUS_EXPORT_PORT) + "/metrics/job/" + metricname + "/instance/" + ip + "/team/saturno"; 
                     data = key + " " + value;
                 } else {
-                    url = "http://172.31.44.121:" + ::to_string(PROMETHEUS_EXPORT_PORT) + "/metrics/job/" + metricname + "/instance/" + ip + "/team/saturno/" + key + "/" + value ; 
-                    data = key + " 0.0";
+                    url = "http://172.31.44.121:" + ::to_string(PROMETHEUS_EXPORT_PORT) + "/metrics/job/" + metricname + "/instance/" + ip + "/team/saturno/" + key + "/" + "Instance:"+ip+"="+value ; 
+                    data = key + " -1.0";
                 }
 
                 cout << "[ Gateway Exporter ] Export URL=" << url << " DATA=" << data << endl;
