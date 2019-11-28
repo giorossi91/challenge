@@ -23,7 +23,8 @@ all: env
 
 	g++ $(OPT) $(INC_PATH) $(LIB_PATH) -o $(BUILD_PATH)/http_post_server http_post_server.cpp $(LIBS)
 	
-	g++ $(OPT) $(INC_PATH) $(LIB_PATH) -o $(BUILD_PATH)/http_gateway_server http_gateway_server.cpp $(LIBS)
+	g++ -c $(OPT) $(INC_PATH) -o $(BUILD_PATH)/http_gateway_server.o http_gateway_server.cpp
+	g++ $(OPT) $(INC_PATH) $(LIB_PATH) -o $(BUILD_PATH)/http_gateway_server $(BUILD_PATH)/http_gateway_server.o $(LIBS)
 
 run_cpu:
 	LD_LIBRARY_PATH=./restbed/lib ./build/get_cpu_load $(GTW)
@@ -44,10 +45,10 @@ run_gateway_server:
 	LD_LIBRARY_PATH=./restbed/lib ./build/http_gateway_server
 
 test_announce:
-	curl -d "/cpu;10000" -X POST $(GTW)/announce
+	curl -d "/cpu;10002" -X POST $(GTW)/announce
 	curl -d "/latency;10000" -X POST $(GTW)/announce
-	curl -d "/ram;10000" -X POST $(GTW)/announce
-	curl -d "/gateway;10000" -X POST $(GTW)/announce
+	curl -d "/ram;10001" -X POST $(GTW)/announce
+	curl -d "/gateway;10003" -X POST $(GTW)/announce
 
 
 env:

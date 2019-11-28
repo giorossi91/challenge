@@ -1,0 +1,4 @@
+{
+   "cpp.clangdArgs": "-I/home/project/git/challenge/restbed/inc -I/home/project/git/challenge/prometheus-cpp/include",
+   "editor.autoSave": "on"
+}

@@ -17,6 +17,8 @@ using namespace std;
 using namespace restbed;
 using std::chrono::system_clock;
 
+
+#define PROMETHEUS_EXPORT_PORT 9091
 #define GIVEUP_THRESHOLD 5.0 //s
 
 struct MicroService {
@@ -24,6 +26,8 @@ struct MicroService {
     uint16_t service_port;
     system_clock::time_point last_time_seen;
     string   resource_url;
+
+    string last_data;
 };
 
 mutex service_map_mutex;
@@ -124,6 +128,8 @@ void request_data_from_services(void) {
                 if(elapsed_time.count() > GIVEUP_THRESHOLD) { //dead!
                     service_map_mutex.lock();
                     service_map[service_list_per_host.first].erase(service.first); //cancello servizio non più esistente
+
+
                     service_map_mutex.unlock();
 
                     cout << "[Gateway] Service Removed: " << service.first << endl;
@@ -156,10 +162,12 @@ void request_data_from_services(void) {
                             response->get_body().data() 
                         );
 
+                        string data_received;
+                        data_received.assign((const char *)response->get_body().data(), ( int ) response->get_body().size( ));
 
-                        /////////////////////////////////
-                        // Pubblicazione dati su HTML (Prometheus)
-                        /////////////////////////////////
+                        service_map_mutex.lock();
+                        service_map[service.second.service_ip].at(service.second.resource_url).last_data = data_received;
+                        service_map_mutex.unlock();
 
                     } else {
                         cout << "[Gateway] Errore " << service.first << endl;
@@ -176,12 +184,74 @@ void request_data_from_services(void) {
 
 }
 
+string get_stdout_from_command(string cmd) {
+	string data;
+	FILE * stream;
+	const int max_buffer = 256;
+	char buffer[max_buffer];
+	cmd.append(" 2>&1");
+
+	stream = popen(cmd.c_str(), "r");
+	if (stream) {
+		while (!feof(stream)) {
+			if (fgets(buffer, max_buffer, stream) != NULL) {
+				data.append(buffer);
+			}
+		}
+		pclose(stream);
+	}
+	return data;
+}
+
+bool is_number(const std::string &s) {
+  return !s.empty() && std::all_of(s.begin(), s.end(), ::isdigit);
+}
+
+void prometheus_exporter(void) {
+    while(1) {
+        service_map_mutex.lock();
+        auto map_local = service_map;
+        service_map_mutex.unlock();
+
+        for(auto &service_list_per_host: map_local) {
+            //cout << "[ Gateway Exporter ] Exporting " << service_list_per_host.first << endl;
+            for(auto &service : service_list_per_host.second) {
+
+                string metricname = service.second.resource_url.substr(1) + "_metric";
+                string ip = service.second.service_ip;
+                string key = service.second.resource_url.substr(1);
+                string value = service.second.last_data;
+
+                string url, data;
+                if(is_number(value)) {
+                    url = "http://172.31.44.121:" + ::to_string(PROMETHEUS_EXPORT_PORT) + "/metrics/job/" + metricname + "/instance/" + ip + "/team/saturno/"; 
+                    data = key + " " + value;
+                } else {
+                    url = "http://172.31.44.121:" + ::to_string(PROMETHEUS_EXPORT_PORT) + "/metrics/job/" + metricname + "/instance/" + ip + "/team/saturno/" + key + "/" + value ; 
+                    data = key + " 0.0";
+                }
+
+                cout << "[ Gateway Exporter ] Export URL=" << url << " DATA=" << data << endl;
+                get_stdout_from_command(
+                    "echo \""+ data + "\" | curl --data-binary @- " + url
+                );
+            }
+        }
+
+
+        sleep(1);
+    }
+
+}
+
 int main( const int, const char** ) {
     thread annouce_manager(annouce_server_thread);
     thread request_manager(request_data_from_services);
+    thread thread_exporter_manager(prometheus_exporter);
 
     annouce_manager.join();
     request_manager.join();
+    thread_exporter_manager.join();
 
     return EXIT_SUCCESS;
 }

@@ -1,5 +1,5 @@
 #!/bin/bash
-IP=35.180.63.114
+IP=172.31.44.121
 
 echo "Deploying CPU Service"
 docker build -t setchallenge/cpu_service:v1 -f Dockerfile_cpu .
