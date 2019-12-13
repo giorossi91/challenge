@@ -17,7 +17,7 @@ using namespace std;
 using namespace restbed;
 using std::chrono::system_clock;
 
-
+#define GTW_IP "172.31.44.121"
 #define PROMETHEUS_EXPORT_PORT 9091
 #define GIVEUP_THRESHOLD 5.0 //s
 
@@ -29,6 +29,9 @@ struct MicroService {
 
     string last_data;
 };
+
+string get_stdout_from_command(string cmd);
+bool is_number(const std::string &s);
 
 mutex service_map_mutex;
 map<string, map<string, MicroService>> service_map; // [ IP remoto ; { [url, info servizi] } ]
@@ -124,6 +127,11 @@ void request_data_from_services(void) {
                 //cout << "[ Gateway ] Service " << service.first << " at " << service.second.service_port << endl;
                 auto last_time = service.second.last_time_seen;
                 auto now = system_clock::now();
+                string metricname = service.second.resource_url.substr(1) + "_metric";
+                string ip = service.second.service_ip;
+                string key = service.second.resource_url.substr(1);
+                string value = service.second.last_data;
+                
                 std::chrono::duration<double> elapsed_time = now - last_time;
                 if(elapsed_time.count() > GIVEUP_THRESHOLD) { //dead!
                     service_map_mutex.lock();
@@ -131,7 +139,29 @@ void request_data_from_services(void) {
 
 
                     service_map_mutex.unlock();
+                    
+                    string cmd_curl;
+                    if(is_number(value)) {
+                      cmd_curl = "curl -X DELETE http://" GTW_IP ":" + 
+                       ::to_string(PROMETHEUS_EXPORT_PORT) +
+                       "/metrics/job/" + metricname + 
+                       "/instance/" + 
+                       ip + 
+                       "/team/saturno";
+                    } else {
+                    
+                      cmd_curl = "curl -X DELETE http://" GTW_IP ":" + 
+                       ::to_string(PROMETHEUS_EXPORT_PORT) +
+                       "/metrics/job/" + metricname + 
+                       "/instance/" + 
+                       ip + 
+                       "/team/saturno/"+ key + "/" + value;
+                    }
+                    
+                    
 
+                    get_stdout_from_command(cmd_curl);
+                    
                     cout << "[Gateway] Service Removed: " << service.first << endl;
                     continue;
                 }
@@ -243,10 +273,10 @@ void prometheus_exporter(void) {
 
                 string url, data;
                 if(is_number(value)) {
-                    url = "http://172.31.44.121:" + ::to_string(PROMETHEUS_EXPORT_PORT) + "/metrics/job/" + metricname + "/instance/" + ip + "/team/saturno"; 
+                    url = "http://" GTW_IP ":" + ::to_string(PROMETHEUS_EXPORT_PORT) + "/metrics/job/" + metricname + "/instance/" + ip + "/team/saturno"; 
                     data = key + " " + value;
                 } else {
-                    url = "http://172.31.44.121:" + ::to_string(PROMETHEUS_EXPORT_PORT) + "/metrics/job/" + metricname + "/instance/" + ip + "/team/saturno/" + key + "/" + "Instance:"+ip+"="+value ; 
+                    url = "http://" GTW_IP ":" + ::to_string(PROMETHEUS_EXPORT_PORT) + "/metrics/job/" + metricname + "/instance/" + ip + "/team/saturno/" + key + "/" + value ; 
                     data = key + " -1.0";
                 }
 
